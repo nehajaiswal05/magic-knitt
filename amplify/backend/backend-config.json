@@ -1,0 +1,10 @@
+{
+  "auth": {
+    "magicknittbf8997b6": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
+  }
+}

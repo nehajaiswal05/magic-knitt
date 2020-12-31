@@ -7,7 +7,7 @@ import Login from './components/Login';
 import ProductList from './components/ProductList';
 import axios from 'axios';
 import jwt_decode from 'jwt-decode';
-
+import { Auth } from 'aws-amplify';
 import Context from "./Context";
 
 export default class App extends Component {
@@ -33,18 +33,17 @@ export default class App extends Component {
   }
 
   login = async (email, password) => {
-    const res = await axios.post(
-      'http://localhost:3001/login',
-      { email, password },
-    ).catch((res) => {
+    const res = await Auth.signIn(email, password)
+    .catch((error) => {
       return { status: 401, message: 'Unauthorized' }
     })
+    console.log(res);
   
-    if(res.status === 200) {
-      const { email } = jwt_decode(res.data.accessToken)
+    if(res.username !== '') {
+      const { email } = jwt_decode(res.signInUserSession.accessToken.jwtToken)
       const user = {
         email,
-        token: res.data.accessToken,
+        token: res.signInUserSession.accessToken.jwtToken,
         accessLevel: email === 'admin@example.com' ? 0 : 1
       }
   
