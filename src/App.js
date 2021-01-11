@@ -9,6 +9,7 @@ import axios from 'axios';
 import jwt_decode from 'jwt-decode';
 import { Auth } from 'aws-amplify';
 import Context from "./Context";
+import SignUp from "./components/SignUp";
 
 export default class App extends Component {
   constructor(props) {
@@ -25,28 +26,50 @@ export default class App extends Component {
     let user = localStorage.getItem("user");
     let cart = localStorage.getItem("cart");
 
-    const products = await axios.get('http://localhost:3001/products');
+    const products = await axios.get('https://nyn35r0xb0.execute-api.us-west-2.amazonaws.com/prod/products?TableName=Products');
     user = user ? JSON.parse(user) : null;
     cart = cart? JSON.parse(cart) : {};
+    this.setState({ user,  products: products.data.Items, cart });
+  };
 
-    this.setState({ user,  products: products.data, cart });
-  }
+  signUp = async (email, password) => {
+    const res = await Auth.signUp({
+      username: email,
+      password: password,
+      attributes: {
+        email: email          
+    }
+    })  
+    .catch((error) => {
+      console.log('error signing up:', error);
+    })
+
+    if(res.username !== '') {
+      const user = {
+        email: res.username,
+        //token: res.signInUserSession.accessToken.jwtToken,
+        accessLevel: email === 'admin@example.com' ? 0 : 1
+      }
+      this.setState({ user });
+      localStorage.setItem("user", JSON.stringify(user));
+      return true;
+    }else {
+      return false;
+    }
+  };
 
   login = async (email, password) => {
     const res = await Auth.signIn(email, password)
     .catch((error) => {
       return { status: 401, message: 'Unauthorized' }
     })
-    console.log(res);
   
     if(res.username !== '') {
-      const { email } = jwt_decode(res.signInUserSession.accessToken.jwtToken)
       const user = {
-        email,
-        token: res.signInUserSession.accessToken.jwtToken,
+        email: res.username,
+        token: res.signInUserSession.idToken.jwtToken,
         accessLevel: email === 'admin@example.com' ? 0 : 1
       }
-  
       this.setState({ user });
       localStorage.setItem("user", JSON.stringify(user));
       return true;
@@ -56,6 +79,7 @@ export default class App extends Component {
   };
 
   logout = e => {
+    Auth.signOut();
     e.preventDefault();
     this.setState({ user: null });
     localStorage.removeItem("user");
@@ -101,14 +125,17 @@ export default class App extends Component {
     }
   
     const cart = this.state.cart;
-  
+    const user = JSON.parse(localStorage.getItem("user"));
+    const table = "Products";
     const products = this.state.products.map(p => {
       if (cart[p.name]) {
         p.stock = p.stock - cart[p.name].amount;
-  
         axios.put(
-          `http://localhost:3001/products/${p.id}`,
-          { ...p },
+          `https://nyn35r0xb0.execute-api.us-west-2.amazonaws.com/prod/products/${p.ProductId}`,
+          { table,...p },
+          { headers: {
+            "Authorization" : user.token
+          }}
         )
       }
       return p;
@@ -126,6 +153,7 @@ export default class App extends Component {
           removeFromCart: this.removeFromCart,
           addToCart: this.addToCart,
           login: this.login,
+          signUp: this.signUp,
           addProduct: this.addProduct,
           clearCart: this.clearCart,
           checkout: this.checkout
@@ -189,11 +217,17 @@ export default class App extends Component {
                     Logout
                   </Link>
                 )}
+                {!this.state.user && (
+                  <Link to="/signUp" className="navbar-item">
+                    SignUp
+                  </Link>
+                )}
               </div>
             </nav>
             <Switch>
               <Route exact path="/" component={ProductList} />
               <Route exact path="/login" component={Login} />
+              <Route exact path="/signUp" component={SignUp} />
               <Route exact path="/cart" component={Cart} />
               <Route exact path="/add-product" component={AddProduct} />
               <Route exact path="/products" component={ProductList} />

@@ -20,13 +20,17 @@ class AddProduct extends Component {
   save = async (e) => {
     e.preventDefault();
     const { name, price, stock, shortDesc, description } = this.state;
-
+    const user = JSON.parse(localStorage.getItem("user"));
     if (name && price) {
       const id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      const table = "Products";
 
       await axios.post(
-        'http://localhost:3001/products',
-        { id, name, price, stock, shortDesc, description },
+        'https://nyn35r0xb0.execute-api.us-west-2.amazonaws.com/prod/products',
+        { table, id, name, price, stock, shortDesc, description }, 
+        { headers: {
+          "Authorization" : user.token
+        }}
       )
 
       this.props.context.addProduct(
