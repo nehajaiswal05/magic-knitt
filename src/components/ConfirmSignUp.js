@@ -2,30 +2,28 @@ import React, { Component } from "react";
 import { Redirect } from "react-router-dom";
 import withContext from "../withContext";
 
-class SignUp extends Component {
+class ConfirmSignUp extends Component {
   constructor(props) {
     super(props);
+    const user = JSON.parse(localStorage.getItem("user"));
     this.state = {
-      username: "",
-      password: ""
+      username: user.email,
+      confirmationCode: ""
     };
   }
 
   handleChange = e => this.setState({ [e.target.name]: e.target.value, error: "" });
 
-  signUp = (e) => {
+  confirmSignUp = (e) => {
     e.preventDefault();
-
-    const { username, password } = this.state;
-
-    if (!username || !password) {
-      return this.setState({ error: "Fill all fields!" });
+    const { username, confirmationCode } = this.state;
+    if (!confirmationCode) {
+      return this.setState({ error: "Please enter the confirmation code sent to your email address!" });
     }
-    this.props.context.signUp(username, password)
-      .then((signedUp) => {
-          this.props.history.push('/confirmSignUp');
-        if (!signedUp) {
-          this.setState({ error: "Error while registering user!" });
+    this.props.context.confirmSignUp(this.state.username, this.state.confirmationCode)
+      .then((confirmUser) => {
+        if (!confirmUser) {
+          this.setState({ error: "Error while confirming new user registration" });
         }
       })
   };
@@ -35,29 +33,20 @@ class SignUp extends Component {
       <>
         <div className="hero is-primary ">
           <div className="hero-body container">
-            <h4 className="title">SignUp</h4>
+            <h4 className="title">Please check your email for the confirmation code sent to you</h4>
           </div>
         </div>
         <br />
         <br />
-        <form onSubmit={this.signUp}>
+        <form onSubmit={this.confirmSignUp}>
           <div className="columns is-mobile is-centered">
             <div className="column is-one-third">
               <div className="field">
-                <label className="label">Email: </label>
+                <label className="label">Confirmation Code</label>
                 <input
                   className="input"
-                  type="email"
-                  name="username"
-                  onChange={this.handleChange}
-                />
-              </div>
-              <div className="field">
-                <label className="label">Password: </label>
-                <input
-                  className="input"
-                  type="password"
-                  name="password"
+                  type="confirmationCode"
+                  name="confirmationCode"
                   onChange={this.handleChange}
                 />
               </div>
@@ -68,7 +57,7 @@ class SignUp extends Component {
                 <button
                   className="button is-primary is-outlined is-pulled-right"
                 >
-                  Submit
+                  Verify
                 </button>
               </div>
             </div>
@@ -76,9 +65,9 @@ class SignUp extends Component {
         </form>
       </>
     ) : (
-      <Redirect to="/confirmSignUp" />
+      <Redirect to="/products" />
     );
   }
 }
 
-export default withContext(SignUp);
+export default withContext(ConfirmSignUp);

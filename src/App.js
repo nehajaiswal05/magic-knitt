@@ -10,6 +10,7 @@ import jwt_decode from 'jwt-decode';
 import { Auth } from 'aws-amplify';
 import Context from "./Context";
 import SignUp from "./components/SignUp";
+import ConfirmSignUp from "./components/ConfirmSignUp";
 
 export default class App extends Component {
   constructor(props) {
@@ -43,16 +44,28 @@ export default class App extends Component {
     .catch((error) => {
       console.log('error signing up:', error);
     })
-
-    if(res.username !== '') {
+    if(res.user.username !== '') {
       const user = {
-        email: res.username,
-        //token: res.signInUserSession.accessToken.jwtToken,
+        email: res.user.username,
+        password: password,
         accessLevel: email === 'admin@example.com' ? 0 : 1
       }
-      this.setState({ user });
       localStorage.setItem("user", JSON.stringify(user));
       return true;
+    }else {
+      return false;
+    }
+  };
+
+  confirmSignUp = async (email, confirmationCode) => {
+    const res = await Auth.confirmSignUp(email, confirmationCode)  
+    .catch((error) => {
+      console.log('error confirming sign up:', error);
+    })
+
+    if(res == 'SUCCESS') {
+      const user = JSON.parse(localStorage.getItem("user"));
+      return this.login(user.email, user.password);
     }else {
       return false;
     }
@@ -154,6 +167,7 @@ export default class App extends Component {
           addToCart: this.addToCart,
           login: this.login,
           signUp: this.signUp,
+          confirmSignUp: this.confirmSignUp,
           addProduct: this.addProduct,
           clearCart: this.clearCart,
           checkout: this.checkout
@@ -228,6 +242,7 @@ export default class App extends Component {
               <Route exact path="/" component={ProductList} />
               <Route exact path="/login" component={Login} />
               <Route exact path="/signUp" component={SignUp} />
+              <Route exact path="/confirmSignUp" component={ConfirmSignUp} />
               <Route exact path="/cart" component={Cart} />
               <Route exact path="/add-product" component={AddProduct} />
               <Route exact path="/products" component={ProductList} />
